@@ -1,17 +1,11 @@
 # Backend Repository README
 
-
+##Login Success generated token 
 ![Login success generated token ](https://github.com/mohamed-taha-1/Back-end/assets/56928006/67cb3913-d8e1-4842-b442-e479c545601d)
 
 ## Introduction
 
-This repository is dedicated to the backend services of our application. All backend services are currently running, but there is an important issue that needs to be addressed regarding Cross-Site Request Forgery (CSRF) protection in the `GlobalSecurity` class for both the `continue` and `login` functionalities.
-
-## CSRF Vulnerability
-
-- The application is currently vulnerable to CSRF attacks.
-- The `GlobalSecurity` class needs to be updated to handle CSRF to ensure the security of our application.
-- Until CSRF is properly handled, the Swagger documentation and endpoints will remain protected.
+This repository is dedicated to the backend services of our application. All backend services are currently running.
 
 ## Login Payload  `/users/save` 
 
