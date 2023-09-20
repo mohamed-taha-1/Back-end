@@ -12,7 +12,7 @@ This repository is dedicated to the backend services of our application. All bac
 
 ## Login Payload  `/users/save` 
 
-- To log in, you can use the following payload:  { "email": "ahmed@gmail.com", "password": "1234" }  or run and add your custom login credential to be allowed to save in H2 [ users/save]
+- To log in, you can use the following payload   :{ "email":"admin@test.com", "password":1234 }    or run and add your custom login credential to be allowed to save in H2 [ users/save]
 
 
 ## Access to `/orders/all`
@@ -20,15 +20,7 @@ This repository is dedicated to the backend services of our application. All bac
 - Access to the `/orders/all` endpoint is enabled and allowed for all users.
 
 ## To-Do List
-
-We have the following tasks pending:
-
-1. **Handle CSRF**: It's crucial to implement CSRF protection in the `GlobalSecurity` class to secure our application.
-
-2. **Token Usage for Angular Login**: After successfully logging in, we must implement an Angular interceptor that passes the authentication token to all methods. This includes making authenticated requests to the `/orders/all` endpoint.
-
 3. **Testing**: I need to add unit and integration tests.
-
 4. **Docker Integration**: I've added a Dockerfile to the repository for containerization, but it has not been built yet. We should build and deploy our application using Docker for better manageability and scalability.
 
 
