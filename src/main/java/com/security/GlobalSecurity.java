@@ -19,66 +19,84 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
+import com.model.dao.UserEntityRepository;
 import com.services.UserService;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
+@EnableMethodSecurity(securedEnabled=true, prePostEnabled=true)
 @EnableWebSecurity
 @Configuration
 public class GlobalSecurity {
-	private final BCryptPasswordEncoder encoder;
 	private final UserService userDetailsService;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final UserEntityRepository userRepository;
 
 	@Autowired
-	public GlobalSecurity(BCryptPasswordEncoder encoder, UserService userDetailsService) {
-		super();
-
-		this.encoder = encoder;
-		this.userDetailsService = userDetailsService;
+	public GlobalSecurity(UserService userDetailsService,
+    		BCryptPasswordEncoder bCryptPasswordEncoder,
+    		UserEntityRepository userRepository
+    		) {
+        this.userDetailsService = userDetailsService;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.userRepository = userRepository;
 	}
 
 	@Bean
 	SecurityFilterChain setSecuerity(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
 
-		AuthenticationManagerBuilder authMangerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-		authMangerBuilder.userDetailsService(userDetailsService).passwordEncoder(encoder);
-
-		AuthenticationManager authManger = authMangerBuilder.build();
-		http.authenticationManager(authManger);
+		// Configure AuthenticationManagerBuilder
+        AuthenticationManagerBuilder authenticationManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(bCryptPasswordEncoder);
+       
+        // Get AuthenticationManager
+        AuthenticationManager authenticationManager = authenticationManagerBuilder.build();
 
 		MvcRequestMatcher.Builder mvcMatcherBuilder = new MvcRequestMatcher.Builder(introspector);
-
-//		 http.csrf(csrfConfigurer ->
-//		 csrfConfigurer.ignoringRequestMatchers(mvcMatcherBuilder.pattern("/users/**")));
-
-		http.authorizeHttpRequests(auth -> auth
-				.requestMatchers(mvcMatcherBuilder.pattern("/users/save"),
-						AntPathRequestMatcher.antMatcher("/orders/all"),
-						AntPathRequestMatcher.antMatcher("/swagger-ui/**"))
-				.permitAll().requestMatchers(AntPathRequestMatcher.antMatcher("/h2/**")).authenticated().anyRequest()
-				.authenticated());
-
-		http.addFilter(new AuthenticationFilter(authManger));
-		http.addFilter(new AuthorizationFilter(authManger));
-		http.sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-
-		// CSRF and the header X-Frame-Options
-
-		http.headers((headers) -> headers.frameOptions(f -> f.sameOrigin()));
-
-		return http.build();
-	}
-
-	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
-		final CorsConfiguration configuration = new CorsConfiguration();
-
-		configuration.setAllowedOrigins(Arrays.asList("*"));
-		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-		configuration.setAllowCredentials(true);
-		configuration.setAllowedHeaders(Arrays.asList("*"));
-
-		final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
-
-		return source;
-	}
+		http
+        .csrf((csrf) -> csrf.disable())
+         .authorizeHttpRequests((authz) -> authz
+					.requestMatchers(
+							AntPathRequestMatcher.antMatcher(HttpMethod.POST,"/users/save"),
+							AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/orders/all"),
+							AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/h2/**"),
+					        AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/swagger-ui/**"),
+					        AntPathRequestMatcher.antMatcher(HttpMethod.GET , "/api-docs"),
+					        AntPathRequestMatcher.antMatcher( HttpMethod.GET,"/swagger-ui/index.html"))
+					.permitAll().anyRequest().authenticated())
+     
+        .addFilter(getAuthenticationFilter(authenticationManager))
+        .addFilter(new AuthorizationFilter(authenticationManager, userRepository))
+        .authenticationManager(authenticationManager)
+        .sessionManagement((session) -> session
+        .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        
+         http.headers((headers) -> headers.frameOptions((frameOptions) -> frameOptions.sameOrigin()));
+        
+        return http.build();
+    }
+ 
+    
+       protected AuthenticationFilter getAuthenticationFilter(AuthenticationManager authenticationManager) throws Exception {
+        final AuthenticationFilter filter = new AuthenticationFilter(authenticationManager);
+        filter.setFilterProcessesUrl("/users/login");
+        return filter;
+    }
+ 
+    
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource()
+    {
+    	final CorsConfiguration configuration = new CorsConfiguration();
+    	   
+    	configuration.setAllowedOrigins(Arrays.asList("*"));
+    	configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE","OPTIONS"));
+    	configuration.setAllowCredentials(true);
+    	configuration.setAllowedHeaders(Arrays.asList("*"));
+    	
+    	final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    	source.registerCorsConfiguration("/**", configuration);
+    	
+    	return source;
+    }
 }
