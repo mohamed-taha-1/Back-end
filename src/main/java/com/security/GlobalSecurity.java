@@ -58,6 +58,7 @@ public class GlobalSecurity {
          .authorizeHttpRequests((authz) -> authz
 					.requestMatchers(
 							AntPathRequestMatcher.antMatcher(HttpMethod.POST,"/users/save"),
+							AntPathRequestMatcher.antMatcher(HttpMethod.POST,"/users/login"),
 							AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/orders/all"),
 							AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/h2/**"),
 					        AntPathRequestMatcher.antMatcher(HttpMethod.GET,"/swagger-ui/**"),
