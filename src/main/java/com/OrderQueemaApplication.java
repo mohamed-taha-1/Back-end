@@ -5,6 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import com.security.AppProperties;
+
 @SpringBootApplication
 public class OrderQueemaApplication {
 
@@ -20,5 +22,11 @@ public class OrderQueemaApplication {
 	@Bean
 	public SpringApplicationCustomContext springApplicationCustomContext( ) {
 		return new SpringApplicationCustomContext();
+	}
+	
+	@Bean(name="AppProperties")
+	public AppProperties getAppProperties()
+	{
+		return new AppProperties();
 	}
 }

@@ -6,4 +6,5 @@ import com.model.dto.UserDto;
 
 public interface UserService extends  UserDetailsService  {
 	public void saveNewUser(UserDto userDto);
+	UserDto getUser(String email);
 }

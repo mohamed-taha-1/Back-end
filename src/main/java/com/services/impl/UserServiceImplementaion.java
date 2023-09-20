@@ -1,18 +1,26 @@
 package com.services.impl;
 
-import org.springframework.stereotype.Service;
-import com.model.UserEntity;
-import com.model.dao.UserEntityRepository;
-import com.model.dto.UserDto;
-import com.model.dto.mappers.UserEntityMapper;
-import com.services.UserService;
-import jakarta.annotation.PostConstruct;
-import jakarta.transaction.Transactional;
-
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.exceptions.UserServiceException;
+import com.model.RoleEntity;
+import com.model.UserEntity;
+import com.model.dao.RoleRepository;
+import com.model.dao.UserEntityRepository;
+import com.model.dto.UserDto;
+import com.model.dto.mappers.UserEntityMapper;
+import com.security.UserPrincipal;
+import com.services.UserService;
+
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 
 @Service
 public class UserServiceImplementaion implements UserService {
@@ -22,14 +30,18 @@ public class UserServiceImplementaion implements UserService {
 
 	private final BCryptPasswordEncoder encode;
 
-	public UserServiceImplementaion(UserEntityRepository userRepo, UserEntityMapper userMapper,
-			BCryptPasswordEncoder encode) {
+	private final RoleRepository roleRepository;
+
+	public UserServiceImplementaion(UserEntityRepository userRepo, RoleRepository roleRepository,
+			UserEntityMapper userMapper, BCryptPasswordEncoder encode) {
 		super();
 		this.userRepo = userRepo;
 		this.userMapper = userMapper;
 		this.encode = encode;
+		this.roleRepository = roleRepository;
 	}
 
+	/**
 	@PostConstruct
 	public void insertDummyUsersForFutureLogin() {
 
@@ -56,31 +68,51 @@ public class UserServiceImplementaion implements UserService {
 			}
 		}
 	}
-
+**/
 	@Override
 	@Transactional
 	public void saveNewUser(UserDto userDto) {
-		String email = userDto.getEmail();
-		UserEntity userTest = userRepo.findByEmail(email);
-		if (userTest != null)
-			throw new RuntimeException("Try with anther email");
-		UserDto local = new UserDto();
-		local.setEmail(userDto.getEmail());
-		local.setPassword(encode.encode(userDto.getPassword()));
+		if (userRepo.findByEmail(userDto.getEmail()) != null)
+			throw new UserServiceException("Record already exists");
 
-		UserEntity user = userMapper.dtoToEntity(local);
-		userRepo.save(user);
+		UserEntity userEntity = userMapper.dtoToEntity(userDto);
+		// Set roles
+		Collection<RoleEntity> roleEntities = new HashSet<>();
+		for (RoleEntity role : userDto.getRoles()) {
+			RoleEntity roleEntity = roleRepository.findByName(role.toString());
+			if (roleEntity != null) {
+				roleEntities.add(roleEntity);
+			}
+		}
 
+		userEntity.setRoles(roleEntities);
+
+		userRepo.save(userEntity);
+	}
+
+	@Override
+	public UserDto getUser(String email) {
+		UserEntity userEntity = userRepo.findByEmail(email);
+
+		if (userEntity == null)
+			throw new UsernameNotFoundException(email);
+
+		UserDto returnValue = new UserDto();
+		returnValue = userMapper.entityToDto(userEntity);
+
+		return returnValue;
 	}
 
 	// --- user details
 
-	@Override
-	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-		UserEntity user = userRepo.findByEmail(username);
-		if (user == null)
-			throw new UsernameNotFoundException("Try with anther email");
 
-		return new org.springframework.security.core.userdetails.User(username, user.getPassword(), new ArrayList<>());
+	@Override
+	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+		UserEntity userEntity = userRepo.findByEmail(email);
+
+		if (userEntity == null)
+			throw new UsernameNotFoundException(email);
+		
+		return new UserPrincipal(userEntity);
 	}
 }

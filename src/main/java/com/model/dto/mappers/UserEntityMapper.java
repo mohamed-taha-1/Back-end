@@ -11,6 +11,7 @@ import com.model.dto.UserDto;
 public interface UserEntityMapper {
 	UserEntityMapper INSTANCE = Mappers.getMapper(UserEntityMapper.class);
 
+	
 	UserDto entityToDto(UserEntity entity);
 
 	@Mapping(target = "id", ignore = true)

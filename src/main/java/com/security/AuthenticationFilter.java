@@ -1,7 +1,6 @@
 package com.security;
 
 import java.io.IOException;
-import java.nio.file.attribute.UserPrincipal;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -10,8 +9,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.model.dto.UserDto;
+import com.services.UserService;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -27,42 +27,50 @@ import org.springframework.security.core.userdetails.User;
 
 public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-	private final AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
-	public AuthenticationFilter(AuthenticationManager authenticationManager) {
-		this.authenticationManager = authenticationManager;
-	}
+    public AuthenticationFilter(AuthenticationManager authenticationManager) {
+        this.authenticationManager = authenticationManager;
+    }
 
-	@Override
-	public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse res)
-			throws AuthenticationException {
-		try {
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest req,
+            HttpServletResponse res) throws AuthenticationException {
+        try {
 
-			LoginPayload creds = new ObjectMapper().readValue(req.getInputStream(), LoginPayload.class);
+            LoginPayload creds = new ObjectMapper()
+                    .readValue(req.getInputStream(), LoginPayload.class);
 
-			return authenticationManager.authenticate(
-					new UsernamePasswordAuthenticationToken(creds.getEmail(), creds.getPassword(), new ArrayList<>()));
+            return authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            creds.getEmail(),
+                            creds.getPassword(),
+                            new ArrayList<>())
+            );
 
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	@Override
-	protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
-			Authentication auth) throws IOException, ServletException {
+    @Override
+    protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res, FilterChain chain,
+            Authentication auth) throws IOException, ServletException {
 
-		byte[] secretKeyBytes = Base64.getEncoder().encode(SecuerityConstants.getToken().getBytes());
-		SecretKey secretKey = new SecretKeySpec(secretKeyBytes, SignatureAlgorithm.HS512.getJcaName());
-		Instant now = Instant.now();
+        byte[] secretKeyBytes = Base64.getEncoder().encode(SecuerityConstants.getTokenSecret().getBytes());
+        SecretKey secretKey = new SecretKeySpec(secretKeyBytes, SignatureAlgorithm.HS512.getJcaName());
+        Instant now = Instant.now();
 
-		String userName = ((User) auth.getPrincipal()).getUsername();
+        String userName = ((UserPrincipal) auth.getPrincipal()).getUsername();
 
-		String token = Jwts.builder().setSubject(userName)
-				.setExpiration(Date.from(now.plusMillis(SecuerityConstants.EXPIRATION_TIME)))
-				.setIssuedAt(Date.from(now)).signWith(SignatureAlgorithm.HS512, secretKey).compact();
+        String token = Jwts.builder()
+                .setSubject(userName)
+                .setExpiration(
+                        Date.from(now.plusMillis(SecuerityConstants.EXPIRATION_TIME)))
+                .setIssuedAt(Date.from(now)).signWith(secretKey, SignatureAlgorithm.HS512).compact();
 
-		res.addHeader(SecuerityConstants.HEADER_STRING, SecuerityConstants.TOKEN_PREFIX + token);
-	}
+        res.addHeader(SecuerityConstants.HEADER_STRING, SecuerityConstants.TOKEN_PREFIX + token);
+    
+    }
 
 }
