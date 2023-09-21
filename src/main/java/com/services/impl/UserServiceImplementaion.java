@@ -41,34 +41,6 @@ public class UserServiceImplementaion implements UserService {
 		this.roleRepository = roleRepository;
 	}
 
-	/**
-	@PostConstruct
-	public void insertDummyUsersForFutureLogin() {
-
-		if (userRepo.count() <= 4) {
-			UserEntity user1 = new UserEntity();
-			user1.setEmail("ahmed@gmail.com");
-			user1.setPassword(encode.encode("1234"));
-
-			UserEntity user2 = new UserEntity();
-			user2.setEmail("yaser@gmail.com");
-			user2.setPassword(encode.encode("1234"));
-
-			UserEntity user3 = new UserEntity();
-			user3.setEmail("ismail@gmail.com");
-			user3.setPassword(encode.encode("1234"));
-
-			UserEntity user4 = new UserEntity();
-			user4.setEmail("shahin@gmail.com");
-			user4.setPassword(encode.encode("1234"));
-
-			UserEntity[] allUsers = { user1, user2, user3, user4 };
-			for (UserEntity userIndex : allUsers) {
-				userRepo.save(userIndex);
-			}
-		}
-	}
-**/
 	@Override
 	@Transactional
 	public void saveNewUser(UserDto userDto) {
@@ -77,15 +49,15 @@ public class UserServiceImplementaion implements UserService {
 
 		UserEntity userEntity = userMapper.dtoToEntity(userDto);
 		// Set roles
-		Collection<RoleEntity> roleEntities = new HashSet<>();
-		for (RoleEntity role : userDto.getRoles()) {
-			RoleEntity roleEntity = roleRepository.findByName(role.toString());
-			if (roleEntity != null) {
-				roleEntities.add(roleEntity);
-			}
-		}
-
-		userEntity.setRoles(roleEntities);
+//		Collection<RoleEntity> roleEntities = new HashSet<>();
+//		for (RoleEntity role : userDto.getRoles()) {
+//			RoleEntity roleEntity = roleRepository.findByName(role.toString());
+//			if (roleEntity != null) {
+//				roleEntities.add(roleEntity);
+//			}
+//		}
+//
+//		userEntity.setRoles(roleEntities);
 
 		userRepo.save(userEntity);
 	}
